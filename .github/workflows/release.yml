@@ -1,0 +1,39 @@
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.Js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.16.0'
+
+      - name: Install and Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Remove node_modules
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: node_modules
+
+      - name: Install prod
+        run: npm i --omit=dev
+
+      - name: Pack
+        run: zip -r Flow.Launcher.Plugin.Devbox.zip . -x '*.git*'
+        
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run:
+          gh release upload ${{ github.ref_name }} Flow.Launcher.Plugin.Devbox.zip
