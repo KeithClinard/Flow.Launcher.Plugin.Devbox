@@ -9,7 +9,7 @@ namespace Flow.Launcher.Plugin.Devbox
 {
   static class VSCode
   {
-    private static readonly string ico = "vscode.png";
+    private static readonly string ico = "VSCode.png";
 
     private static List<String> subtitles = new List<String>{
       "WSL", "Windows", "VSCode Workspace - WSL", "VSCode Workspace - Windows"
