@@ -1,0 +1,33 @@
+name: cache dotnet packages
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: cache
+  cancel-in-progress: true
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core SDK 7.0.x
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          lookup-only: true
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: dotnet restore --locked-mode
