@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +39,7 @@ namespace Flow.Launcher.Plugin.Devbox
       {
         return query.ActionKeyword switch
         {
-          // TODO - Attach action keywords to plugins
+          "c" => await Task.Run(() => VSCode.Query(query, settings, context)),
           _ => await Task.Run(() => new List<Result>(){
             new Result()
             {

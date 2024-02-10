@@ -1,4 +1,4 @@
-﻿using Flow.Launcher.Plugin.Devbox.Models;
+using Flow.Launcher.Plugin.Devbox.Models;
 
 namespace Flow.Launcher.Plugin.Devbox.UI
 {
