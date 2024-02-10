@@ -40,6 +40,7 @@ namespace Flow.Launcher.Plugin.Devbox
         return query.ActionKeyword switch
         {
           "c" => await Task.Run(() => VSCode.Query(query, settings, context)),
+          "db" => await Task.Run(() => Update.Query(query, settings, context)),
           _ => await Task.Run(() => new List<Result>(){
             new Result()
             {
