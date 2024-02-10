@@ -1,0 +1,179 @@
+<UserControl
+  x:Class="Flow.Launcher.Plugin.Devbox.UI.SettingsView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.modernwpf.com/2019"
+  xmlns:vm="clr-namespace:Flow.Launcher.Plugin.Devbox.UI"
+  d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+  d:DesignHeight="700"
+  d:DesignWidth="900"
+  mc:Ignorable="d"
+>
+
+  <Border CornerRadius="0,0,9,9" Style="{DynamicResource SettingGroupBox}">
+    <StackPanel Margin="0,10,0,10" Orientation="Horizontal">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+          <ColumnDefinition Width="*" SharedSizeGroup="B" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+          Grid.Row="1"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="GitHub  API Token"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="1"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding githubApiToken}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="2"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="Windows Git Folder"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="2"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding gitFolder}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="3"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="Windows Git Worktrees Folder"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="3"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding gitWorktreesFolder}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="4"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="WSL Git Folder"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="4"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding wslGitFolder}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="5"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="WSL Git Worktrees Folder"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="5"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding wslGitWorktreesFolder}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="6"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="WSL Distro Name"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="6"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding wslDistroName}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>
