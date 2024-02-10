@@ -1,4 +1,4 @@
-﻿namespace Flow.Launcher.Plugin.Devbox.Models
+namespace Flow.Launcher.Plugin.Devbox.Models
 {
   public class Settings
   {
