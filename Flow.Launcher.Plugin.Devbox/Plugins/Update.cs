@@ -11,7 +11,7 @@ namespace Flow.Launcher.Plugin.Devbox
 {
   static class Update
   {
-    private static readonly string pluginIcon = "Plugin.png";
+    private static readonly string pluginIcon = "Prompt.png";
     private static readonly string ico = "GitHub.png";
     private static readonly string thisRepo = "KeithClinard/Flow.Launcher.Plugin.Devbox";
     private static readonly string zipAssetName = "Flow.Launcher.Plugin.Devbox.zip";
