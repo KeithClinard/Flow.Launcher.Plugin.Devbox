@@ -1,0 +1,52 @@
+name: release
+
+permissions: write-all
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: build-artifact-${{ github.event.repository.name }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core SDK 7.0.x
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Install dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Write release version to file
+        run: echo "${{ github.event.release.tag_name }}" > dist/current.version
+
+      - name: Package application
+        run: zip -r ${{ github.event.repository.name }}.zip .
+        working-directory: dist
+      
+      - name: Move artifact
+        run: mv dist/${{ github.event.repository.name }}.zip .
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ github.event.repository.name }}.zip
