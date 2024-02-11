@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Flow.Launcher.Plugin.Devbox.Models;
+using Flow.Launcher.Plugin.Devbox.Core;
 
 namespace Flow.Launcher.Plugin.Devbox
 {
