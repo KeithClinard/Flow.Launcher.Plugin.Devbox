@@ -1,133 +1,131 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Flow.Launcher.Plugin.Devbox.Core;
 
-namespace Flow.Launcher.Plugin.Devbox
+namespace Flow.Launcher.Plugin.Devbox;
+
+internal static class CloneRepo
 {
-  static class CloneRepo
+  private static readonly string _ico = "github.png";
+
+  public static void clone(ApiResultRepo result, bool useWsl, Settings settings)
   {
-    private static readonly string ico = "github.png";
+    var cloneUrl = $"git@github.com:{result.owner.login}/{result.name}.git";
+    clone(cloneUrl, result.name, useWsl, settings);
+  }
 
-    public static void clone(ApiResultRepo result, Boolean useWsl, Settings settings)
+  public static void clone(string cloneUrl, string repoName, bool useWsl, Settings settings)
+  {
+    var cloneDirectory = settings.gitFolder;
+    if (useWsl)
     {
-      var cloneUrl = $"git@github.com:{result.owner.login}/{result.name}.git";
-      clone(cloneUrl, result.name, useWsl, settings);
+      cloneDirectory = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
+    }
+    var targetDirectory = $"{cloneDirectory}\\{repoName}";
+    if (Directory.Exists(targetDirectory))
+    {
+      return;
+    }
+    var command = $"git clone {cloneUrl}";
+    if (useWsl)
+    {
+      command = $"wsl --cd {settings.wslGitFolder} {command}";
+    }
+    ProcessStartInfo info;
+    var arguments = $"/c \"{command}\"";
+    info = new ProcessStartInfo
+    {
+      FileName = "cmd.exe",
+      Arguments = arguments,
+      UseShellExecute = true,
+      WindowStyle = ProcessWindowStyle.Hidden,
+      WorkingDirectory = settings.gitFolder
+    };
+
+    _ = Process.Start(info);
+  }
+
+  public static List<Result> Query(Query query, Settings settings, PluginInitContext context)
+  {
+    var list = new List<Result>();
+
+    var searchQuery = query.Search;
+    var useWsl = true;
+    var cloneMessage = "Clone repository into WSL";
+    if (searchQuery == "win" || searchQuery.StartsWith("win "))
+    {
+      cloneMessage = "Clone repository into Windows";
+      useWsl = false;
+      searchQuery = searchQuery.Remove(0, 3).Trim();
     }
 
-    public static void clone(String cloneUrl, String repoName, Boolean useWsl, Settings settings)
+    if (searchQuery.Length == 0)
     {
-      String cloneDirectory = settings.gitFolder;
-      if (useWsl)
+      list.Add(new Result
       {
-        cloneDirectory = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
-      }
-      String targetDirectory = $"{cloneDirectory}\\{repoName}";
-      if (Directory.Exists(targetDirectory))
-      {
-        return;
-      }
-      var command = $"git clone {cloneUrl}";
-      if (useWsl)
-      {
-        command = $"wsl --cd {settings.wslGitFolder} {command}";
-      }
-      ProcessStartInfo info;
-      var arguments = $"/c \"{command}\"";
-      info = new ProcessStartInfo
-      {
-        FileName = "cmd.exe",
-        Arguments = arguments,
-        UseShellExecute = true,
-        WindowStyle = ProcessWindowStyle.Hidden,
-        WorkingDirectory = settings.gitFolder
-      };
-
-      Process.Start(info);
+        Title = cloneMessage,
+        SubTitle = "Keep typing to search for repositories",
+        IcoPath = _ico
+      });
+      return list;
     }
 
-    public static List<Result> Query(Query query, Settings settings, PluginInitContext context)
+    var folder = settings.gitFolder;
+    if (useWsl)
     {
-      List<Result> list = new List<Result>();
+      folder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
+    }
 
-      String searchQuery = query.Search;
-      Boolean useWsl = true;
-      String cloneMessage = "Clone repository into WSL";
-      if (searchQuery == "win" || searchQuery.StartsWith("win "))
+    if (searchQuery.StartsWith("https://") || searchQuery.StartsWith("git@"))
+    {
+      var lastSlash = searchQuery.LastIndexOf('/');
+      var gitExtension = searchQuery.LastIndexOf(".git");
+      var repoName = searchQuery.Substring(lastSlash + 1, gitExtension - lastSlash - 1);
+      list.Add(new Result
       {
-        cloneMessage = "Clone repository into Windows";
-        useWsl = false;
-        searchQuery = searchQuery.Remove(0, 3).Trim();
-      }
+        Title = repoName,
+        SubTitle = cloneMessage,
+        IcoPath = _ico,
+        Action = (e) =>
+        {
+          clone(searchQuery, repoName, useWsl, settings);
+          VSCode.openVSCode(folder + "\\" + repoName, useWsl, settings);
+          return true;
+        }
+      });
+      return list;
+    }
 
-      if (searchQuery.Length == 0)
+    var results = GithubApi.QueryGithub(searchQuery, settings);
+
+    if (results.total_count > 0)
+    {
+      foreach (var result in results.items)
       {
         list.Add(new Result
         {
-          Title = cloneMessage,
-          SubTitle = "Keep typing to search for repositories",
-          IcoPath = ico
-        });
-        return list;
-      }
-
-      String folder = settings.gitFolder;
-      if (useWsl)
-      {
-        folder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
-      }
-
-      if (searchQuery.StartsWith("https://") || searchQuery.StartsWith("git@"))
-      {
-        var lastSlash = searchQuery.LastIndexOf('/');
-        var gitExtension = searchQuery.LastIndexOf(".git");
-        var repoName = searchQuery.Substring(lastSlash + 1, gitExtension - lastSlash - 1);
-        list.Add(new Result
-        {
-          Title = repoName,
+          Title = result.full_name,
           SubTitle = cloneMessage,
-          IcoPath = ico,
+          IcoPath = _ico,
           Action = (e) =>
           {
-            clone(searchQuery, repoName, useWsl, settings);
-            VSCode.openVSCode(folder + "\\" + repoName, useWsl, settings);
+            clone(result, useWsl, settings);
+            VSCode.openVSCode(folder + "\\" + result.name, useWsl, settings);
             return true;
           }
         });
-        return list;
       }
-
-      ApiResult results = GithubApi.QueryGithub(searchQuery, settings);
-
-      if (results.total_count > 0)
-      {
-        foreach (ApiResultRepo result in results.items)
-        {
-          list.Add(new Result
-          {
-            Title = result.full_name,
-            SubTitle = cloneMessage,
-            IcoPath = ico,
-            Action = (e) =>
-            {
-              clone(result, useWsl, settings);
-              VSCode.openVSCode(folder + "\\" + result.name, useWsl, settings);
-              return true;
-            }
-          });
-        }
-      }
-      else
-      {
-        list.Add(new Result
-        {
-          Title = "No Results Found",
-          IcoPath = ico
-        });
-      }
-
-      return list;
     }
+    else
+    {
+      list.Add(new Result
+      {
+        Title = "No Results Found",
+        IcoPath = _ico
+      });
+    }
+
+    return list;
   }
 }
