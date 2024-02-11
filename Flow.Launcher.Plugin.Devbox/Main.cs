@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using Flow.Launcher.Plugin;
-using Flow.Launcher.Plugin.Devbox.Models;
+using Flow.Launcher.Plugin.Devbox.Core;
 using Flow.Launcher.Plugin.Devbox.UI;
 
 namespace Flow.Launcher.Plugin.Devbox
@@ -17,13 +17,20 @@ namespace Flow.Launcher.Plugin.Devbox
 
     const string ico = "Prompt.png";
 
+    private static readonly List<string> requiresRepoCache = new List<string>()
+    {
+      "gh",
+      "cl",
+      "clone"
+    };
+
     public event ResultUpdatedEventHandler ResultsUpdated;
 
     public async Task InitAsync(PluginInitContext context)
     {
       this.context = context;
       settings = context.API.LoadSettingJsonStorage<Settings>();
-      // TODO - Preload repos
+      GithubApi.StartLoadReposTask(settings);
       await Task.CompletedTask;
     }
 
@@ -37,9 +44,74 @@ namespace Flow.Launcher.Plugin.Devbox
     {
       try
       {
+        if (requiresRepoCache.Contains(query.ActionKeyword))
+        {
+          if (String.IsNullOrEmpty(settings.githubApiToken))
+          {
+            return await Task.Run(() => new List<Result>(){
+              new Result()
+              {
+                Title = "GitHub API token not set - Press enter to open settings",
+                SubTitle = "Settings > Plugins > Devbox > GitHub API Token",
+                Action = (e) =>
+                {
+                  context.API.OpenSettingDialog();
+                  return true;
+                },
+                IcoPath = ico
+              }
+            });
+          }
+          Task loadReposTask = GithubApi.loadReposTask;
+          bool taskFinished = loadReposTask.Status == TaskStatus.RanToCompletion
+           || loadReposTask.Status == TaskStatus.Faulted
+           || loadReposTask.Status == TaskStatus.Canceled;
+          if (!taskFinished)
+          {
+            ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
+            {
+              Results = new List<Result>()
+              {
+                new Result()
+                {
+                  Title = "Loading GitHub repos...",
+                  IcoPath = ico
+                }
+              },
+              Query = query
+            });
+            try
+            {
+              await loadReposTask;
+            }
+            catch (Exception)
+            {
+              // Do nothing - handled in the next block
+            }
+          }
+
+          if (GithubApi.reposLoaded == false)
+          {
+            return await Task.Run(() => new List<Result>(){
+              new Result()
+              {
+                Title = "GitHub repos failed to load. Restart?",
+                SubTitle = $"Error: {loadReposTask.Exception.InnerException.Message}",
+                Action = (e) =>
+                {
+                  GithubApi.StartLoadReposTask(settings);
+                  return true;
+                },
+                IcoPath = ico
+              }
+            });
+          }
+        }
+
         return query.ActionKeyword switch
         {
           "c" => await Task.Run(() => VSCode.Query(query, settings, context)),
+          "gh" => await Task.Run(() => Github.Query(query, settings, context)),
           "db" => await Task.Run(() => Update.Query(query, settings, context)),
           _ => await Task.Run(() => new List<Result>(){
             new Result()

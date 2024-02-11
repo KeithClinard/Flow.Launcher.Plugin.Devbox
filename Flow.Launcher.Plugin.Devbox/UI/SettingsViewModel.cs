@@ -1,4 +1,5 @@
-using Flow.Launcher.Plugin.Devbox.Models;
+using System.Collections.Generic;
+using Flow.Launcher.Plugin.Devbox.Core;
 
 namespace Flow.Launcher.Plugin.Devbox.UI
 {
@@ -18,8 +19,40 @@ namespace Flow.Launcher.Plugin.Devbox.UI
       get => Settings.githubApiToken;
       set
       {
-        Settings.githubApiToken = value;
-        // TODO - Preload repos
+        if(Settings.githubApiToken != value) {
+          Settings.githubApiToken = value;
+          GithubApi.StartLoadReposTask(Settings);
+        }
+        OnPropertyChanged();
+      }
+    }
+
+    public string githubUser
+    {
+      get => Settings.githubUser;
+      set
+      {
+        if(Settings.githubUser != value) {
+          Settings.githubUser = value;
+          GithubApi.StartLoadReposTask(Settings);
+        }
+        OnPropertyChanged();
+      }
+    }
+
+    public string githubOrganizations
+    {
+      get {
+        return string.Join(", ", Settings.organizations);
+      }
+      set
+      {
+        var newValue = value.Replace(" ", "");
+        var stringOrgs = string.Join(",", Settings.organizations);
+        if(stringOrgs != newValue) {
+          Settings.organizations = new List<string>(value.Split(","));
+          GithubApi.StartLoadReposTask(Settings);
+        }
         OnPropertyChanged();
       }
     }

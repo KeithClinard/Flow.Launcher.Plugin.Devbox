@@ -27,6 +27,9 @@
           <RowDefinition />
           <RowDefinition />
           <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
+          <RowDefinition />
         </Grid.RowDefinitions>
 
         <TextBlock
@@ -35,7 +38,7 @@
           Margin="16,6,16,6"
           HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Text="GitHub  API Token"
+          Text="GitHub API Token"
           TextBlock.Foreground="{DynamicResource Color05B}"
         />
         <StackPanel
@@ -172,6 +175,64 @@
             TextWrapping="NoWrap"
           />
         </StackPanel>
+
+
+        <TextBlock
+          Grid.Row="7"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="GitHub User"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="7"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding githubUser}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Grid.Row="8"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="GitHub Organizations"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
+        <StackPanel
+          Grid.Row="8"
+          Grid.Column="1"
+          Margin="0,6,6,6"
+          Orientation="Horizontal"
+        >
+          <TextBox
+            Width="300"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Text="{Binding githubOrganizations}"
+            TextWrapping="NoWrap"
+          />
+        </StackPanel>
+        <TextBlock
+          Grid.Row="9"
+          Grid.Column="0"
+          Margin="16,6,16,6"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="(Comma separated list of organizations)"
+          TextBlock.Foreground="{DynamicResource Color05B}"
+        />
 
       </Grid>
     </StackPanel>
