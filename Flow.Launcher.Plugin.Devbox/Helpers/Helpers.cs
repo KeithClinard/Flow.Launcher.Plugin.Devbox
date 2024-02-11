@@ -1,18 +1,16 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
-namespace Flow.Launcher.Plugin.Devbox.Core
+namespace Flow.Launcher.Plugin.Devbox.Core;
+
+internal static class Helpers
 {
-  static class Helpers
+  public static void OpenUrl(string url)
   {
-    public static void OpenUrl(String url)
-    {
-      _ = Process.Start(
-        new ProcessStartInfo(url)
-        {
-          UseShellExecute = true,
-        }
-      );
-    }
+    _ = Process.Start(
+      new ProcessStartInfo(url)
+      {
+        UseShellExecute = true,
+      }
+    );
   }
 }

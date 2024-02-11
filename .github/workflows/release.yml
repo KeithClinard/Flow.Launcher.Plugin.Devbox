@@ -42,7 +42,7 @@ jobs:
       - name: Package application
         run: zip -r ${{ github.event.repository.name }}.zip .
         working-directory: dist
-      
+
       - name: Move artifact
         run: mv dist/${{ github.event.repository.name }}.zip .
 

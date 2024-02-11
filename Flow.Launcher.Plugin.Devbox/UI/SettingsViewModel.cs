@@ -1,110 +1,109 @@
 using System.Collections.Generic;
 using Flow.Launcher.Plugin.Devbox.Core;
 
-namespace Flow.Launcher.Plugin.Devbox.UI
+namespace Flow.Launcher.Plugin.Devbox.UI;
+
+public class SettingsViewModel : BaseModel
 {
-  public class SettingsViewModel : BaseModel
+  public readonly PluginInitContext Context;
+  public Settings Settings { get; init; }
+
+  public SettingsViewModel(PluginInitContext context, Settings settings)
   {
-    public readonly PluginInitContext Context;
-    public Settings Settings { get; init; }
+    Settings = settings;
+    Context = context;
+  }
 
-    public SettingsViewModel(PluginInitContext context, Settings settings)
+  public string githubApiToken
+  {
+    get => Settings.githubApiToken;
+    set
     {
-      Settings = settings;
-      Context = context;
+      if(Settings.githubApiToken != value) {
+        Settings.githubApiToken = value;
+        GithubApi.StartLoadReposTask(Settings);
+      }
+      OnPropertyChanged();
     }
+  }
 
-    public string githubApiToken
+  public string githubUser
+  {
+    get => Settings.githubUser;
+    set
     {
-      get => Settings.githubApiToken;
-      set
-      {
-        if(Settings.githubApiToken != value) {
-          Settings.githubApiToken = value;
-          GithubApi.StartLoadReposTask(Settings);
-        }
-        OnPropertyChanged();
+      if(Settings.githubUser != value) {
+        Settings.githubUser = value;
+        GithubApi.StartLoadReposTask(Settings);
       }
+      OnPropertyChanged();
     }
+  }
 
-    public string githubUser
-    {
-      get => Settings.githubUser;
-      set
-      {
-        if(Settings.githubUser != value) {
-          Settings.githubUser = value;
-          GithubApi.StartLoadReposTask(Settings);
-        }
-        OnPropertyChanged();
-      }
+  public string githubOrganizations
+  {
+    get {
+      return string.Join(", ", Settings.organizations);
     }
-
-    public string githubOrganizations
+    set
     {
-      get {
-        return string.Join(", ", Settings.organizations);
+      var newValue = value.Replace(" ", "");
+      var stringOrgs = string.Join(",", Settings.organizations);
+      if(stringOrgs != newValue) {
+        Settings.organizations = new List<string>(value.Split(","));
+        GithubApi.StartLoadReposTask(Settings);
       }
-      set
-      {
-        var newValue = value.Replace(" ", "");
-        var stringOrgs = string.Join(",", Settings.organizations);
-        if(stringOrgs != newValue) {
-          Settings.organizations = new List<string>(value.Split(","));
-          GithubApi.StartLoadReposTask(Settings);
-        }
-        OnPropertyChanged();
-      }
+      OnPropertyChanged();
     }
+  }
 
-    public string gitFolder
+  public string gitFolder
+  {
+    get => Settings.gitFolder;
+    set
     {
-      get => Settings.gitFolder;
-      set
-      {
-        Settings.gitFolder = value;
-        OnPropertyChanged();
-      }
+      Settings.gitFolder = value;
+      OnPropertyChanged();
     }
+  }
 
-    public string gitWorktreesFolder
+  public string gitWorktreesFolder
+  {
+    get => Settings.gitWorktreesFolder;
+    set
     {
-      get => Settings.gitWorktreesFolder;
-      set
-      {
-        Settings.gitWorktreesFolder = value;
-        OnPropertyChanged();
-      }
+      Settings.gitWorktreesFolder = value;
+      OnPropertyChanged();
     }
+  }
 
-    public string wslGitFolder
+  public string wslGitFolder
+  {
+    get => Settings.wslGitFolder;
+    set
     {
-      get => Settings.wslGitFolder;
-      set
-      {
-        Settings.wslGitFolder = value;
-        OnPropertyChanged();
-      }
+      Settings.wslGitFolder = value;
+      OnPropertyChanged();
     }
+  }
 
-    public string wslGitWorktreesFolder
+  public string wslGitWorktreesFolder
+  {
+    get => Settings.wslGitWorktreesFolder;
+    set
     {
-      get => Settings.wslGitWorktreesFolder;
-      set
-      {
-        Settings.wslGitWorktreesFolder = value;
-        OnPropertyChanged();
-      }
+      Settings.wslGitWorktreesFolder = value;
+      OnPropertyChanged();
     }
+  }
 
-    public string wslDistroName
+  public string wslDistroName
+  {
+    get => Settings.wslDistroName;
+    set
     {
-      get => Settings.wslDistroName;
-      set
-      {
-        Settings.wslDistroName = value;
-        OnPropertyChanged();
-      }
+      Settings.wslDistroName = value;
+      OnPropertyChanged();
     }
   }
 }

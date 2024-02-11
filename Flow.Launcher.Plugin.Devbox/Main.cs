@@ -3,164 +3,161 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using Flow.Launcher.Plugin;
 using Flow.Launcher.Plugin.Devbox.Core;
 using Flow.Launcher.Plugin.Devbox.UI;
 
-namespace Flow.Launcher.Plugin.Devbox
+namespace Flow.Launcher.Plugin.Devbox;
+
+
+public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
 {
+  private PluginInitContext _context;
+  private Settings _settings;
+  private const string _ico = "Prompt.png";
 
-  public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
+  private static readonly List<string> _requiresRepoCache = new()
   {
-    private PluginInitContext context;
-    private Settings settings;
+    "gh",
+    "cl",
+    "clone"
+  };
 
-    const string ico = "Prompt.png";
+  public event ResultUpdatedEventHandler ResultsUpdated;
 
-    private static readonly List<string> requiresRepoCache = new List<string>()
+  public async Task InitAsync(PluginInitContext context)
+  {
+    this._context = context;
+    _settings = context.API.LoadSettingJsonStorage<Settings>();
+    GithubApi.StartLoadReposTask(_settings);
+    await Task.CompletedTask;
+  }
+
+  public Control CreateSettingPanel()
+  {
+    var _viewModel = new SettingsViewModel(_context, _settings);
+    return new SettingsView(_viewModel);
+  }
+
+  public async Task<List<Result>> QueryAsync(Query query, CancellationToken cancellationToken)
+  {
+    try
     {
-      "gh",
-      "cl",
-      "clone"
-    };
+      if (_requiresRepoCache.Contains(query.ActionKeyword))
+      {
+        var intermediateResultList = await HandleRepoCacheLoading(query);
+        if (intermediateResultList != null && intermediateResultList.Count > 0)
+        {
+          return intermediateResultList;
+        }
+      }
 
-    public event ResultUpdatedEventHandler ResultsUpdated;
-
-    public async Task InitAsync(PluginInitContext context)
-    {
-      this.context = context;
-      settings = context.API.LoadSettingJsonStorage<Settings>();
-      GithubApi.StartLoadReposTask(settings);
-      await Task.CompletedTask;
+      return query.ActionKeyword switch
+      {
+        "c" => await Task.Run(() => VSCode.Query(query, _settings, _context)),
+        "gh" => await Task.Run(() => Github.Query(query, _settings, _context)),
+        "cl" or "clone" => await Task.Run(() => CloneRepo.Query(query, _settings, _context)),
+        "db" => await Task.Run(() => Update.Query(query, _settings, _context)),
+        _ => await Task.Run(() => new List<Result>(){
+          new()
+          {
+            Title = "Unknown action keyword: " + query.ActionKeyword,
+            IcoPath = _ico
+          }
+        }),
+      };
     }
-
-    public Control CreateSettingPanel()
+    catch (Exception e)
     {
-      var _viewModel = new SettingsViewModel(context, settings);
-      return new SettingsView(_viewModel);
+      return await Task.Run(() => new List<Result>()
+      {
+        new()
+        {
+          Title = "Error: " + e.Message,
+          IcoPath = _ico
+        }
+      });
     }
+  }
 
-    public async Task<List<Result>> QueryAsync(Query query, CancellationToken cancellationToken)
+  private async Task<List<Result>> HandleRepoCacheLoading(Query query)
+  {
+    if (string.IsNullOrEmpty(_settings.githubApiToken))
     {
+      return await Task.Run(() => new List<Result>(){
+            new()
+            {
+              Title = "GitHub API token not set - Press enter to open settings",
+              SubTitle = "Settings > Plugins > Devbox > GitHub API Token",
+              Action = (e) =>
+              {
+                _context.API.OpenSettingDialog();
+                return true;
+              },
+              IcoPath = _ico
+            }
+          });
+    }
+    var hasUserOrOrgs = _settings.githubUser != null || _settings.organizations.Count > 0;
+    if (!hasUserOrOrgs)
+    {
+      return await Task.Run(() => new List<Result>(){
+            new()
+            {
+              Title = "GitHub user or organization not set - Press enter to open settings",
+              SubTitle = "Settings > Plugins > Devbox > GitHub User",
+              Action = (e) =>
+              {
+                _context.API.OpenSettingDialog();
+                return true;
+              },
+              IcoPath = _ico
+            }
+          });
+    }
+    var loadReposTask = GithubApi.loadReposTask;
+    var taskFinished = loadReposTask.Status == TaskStatus.RanToCompletion
+     || loadReposTask.Status == TaskStatus.Faulted
+     || loadReposTask.Status == TaskStatus.Canceled;
+    if (!taskFinished)
+    {
+      ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
+      {
+        Results = new List<Result>()
+            {
+              new()
+              {
+                Title = "Loading GitHub repos...",
+                IcoPath = _ico
+              }
+            },
+        Query = query
+      });
       try
       {
-        if (requiresRepoCache.Contains(query.ActionKeyword))
-        {
-          var intermediateResultList = await HandleRepoCacheLoading(query);
-          if (intermediateResultList != null && intermediateResultList.Count > 0)
-          {
-            return intermediateResultList;
-          }
-        }
-
-        return query.ActionKeyword switch
-        {
-          "c" => await Task.Run(() => VSCode.Query(query, settings, context)),
-          "gh" => await Task.Run(() => Github.Query(query, settings, context)),
-          "cl" or "clone" => await Task.Run(() => CloneRepo.Query(query, settings, context)),
-          "db" => await Task.Run(() => Update.Query(query, settings, context)),
-          _ => await Task.Run(() => new List<Result>(){
-            new Result()
-            {
-              Title = "Unknown action keyword: " + query.ActionKeyword,
-              IcoPath = ico
-            }
-          }),
-        };
+        await loadReposTask;
       }
-      catch (Exception e)
+      catch (Exception)
       {
-        return await Task.Run(() => new List<Result>()
-        {
-          new Result()
-          {
-            Title = "Error: " + e.Message,
-            IcoPath = ico
-          }
-        });
+        // Do nothing - handled in the next block
       }
     }
 
-    private async Task<List<Result>> HandleRepoCacheLoading(Query query)
+    if (GithubApi.reposLoaded == false)
     {
-      if (String.IsNullOrEmpty(settings.githubApiToken))
-      {
-        return await Task.Run(() => new List<Result>(){
-              new Result()
+      return await Task.Run(() => new List<Result>(){
+            new()
+            {
+              Title = "GitHub repos failed to load. Restart?",
+              SubTitle = $"Error: {loadReposTask.Exception.InnerException.Message}",
+              Action = (e) =>
               {
-                Title = "GitHub API token not set - Press enter to open settings",
-                SubTitle = "Settings > Plugins > Devbox > GitHub API Token",
-                Action = (e) =>
-                {
-                  context.API.OpenSettingDialog();
-                  return true;
-                },
-                IcoPath = ico
-              }
-            });
-      }
-      var hasUserOrOrgs = settings.githubUser != null || settings.organizations.Count > 0;
-      if (!hasUserOrOrgs)
-      {
-        return await Task.Run(() => new List<Result>(){
-              new Result()
-              {
-                Title = "GitHub user or organization not set - Press enter to open settings",
-                SubTitle = "Settings > Plugins > Devbox > GitHub User",
-                Action = (e) =>
-                {
-                  context.API.OpenSettingDialog();
-                  return true;
-                },
-                IcoPath = ico
-              }
-            });
-      }
-      Task loadReposTask = GithubApi.loadReposTask;
-      bool taskFinished = loadReposTask.Status == TaskStatus.RanToCompletion
-       || loadReposTask.Status == TaskStatus.Faulted
-       || loadReposTask.Status == TaskStatus.Canceled;
-      if (!taskFinished)
-      {
-        ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
-        {
-          Results = new List<Result>()
-              {
-                new Result()
-                {
-                  Title = "Loading GitHub repos...",
-                  IcoPath = ico
-                }
+                GithubApi.StartLoadReposTask(_settings);
+                return true;
               },
-          Query = query
-        });
-        try
-        {
-          await loadReposTask;
-        }
-        catch (Exception)
-        {
-          // Do nothing - handled in the next block
-        }
-      }
-
-      if (GithubApi.reposLoaded == false)
-      {
-        return await Task.Run(() => new List<Result>(){
-              new Result()
-              {
-                Title = "GitHub repos failed to load. Restart?",
-                SubTitle = $"Error: {loadReposTask.Exception.InnerException.Message}",
-                Action = (e) =>
-                {
-                  GithubApi.StartLoadReposTask(settings);
-                  return true;
-                },
-                IcoPath = ico
-              }
-            });
-      }
-      return new List<Result>();
+              IcoPath = _ico
+            }
+          });
     }
+    return new List<Result>();
   }
 }

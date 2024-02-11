@@ -2,7 +2,7 @@ name: cache dotnet packages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: cache
