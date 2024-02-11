@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
@@ -16,52 +14,11 @@ internal static class GithubApi
 {
   private static readonly string _githubApiUrl = "https://api.github.com";
   private static readonly HttpClient _httpClient = new();
-  private static Dictionary<string, ApiResultRepo> _repoCache = new();
-  public static bool reposLoaded = false;
-  public static Task loadReposTask = null;
+  public static Task loadReposTask = null;  
 
-  private static ApiResult QueryLocalCache(string query, Settings settings)
-  {
-    var splitChars = query.Replace(" ", "").ToCharArray();
-    var splitQuery = new List<string>();
-    for (var i = 0; i < splitChars.Length; i++)
-    {
-      splitQuery.Add(Regex.Escape(splitChars[i].ToString()));
-    }
-    var regexQueryString = string.Join(".*", splitQuery);
-    var searchRegex = new Regex(".*" + regexQueryString + ".*", RegexOptions.IgnoreCase);
-
-    var response = new ApiResult
-    {
-      items = _repoCache
-      .Where(i => searchRegex.IsMatch(i.Value.name))
-      .Select(i => i.Value)
-      .OrderBy(i => i.archived)
-        .ThenByDescending(i => i.owner.type == "Organization")
-        .ThenByDescending(i => i.updated_at)
-      .ToList()
-    };
-
-    response.total_count = response.items.Count;
-    response.incomplete_results = response.total_count == 0;
-
-    return response;
-  }
-  
-  private static void AddToLocalCache(ApiResult result)
-  {
-    foreach (var repo in result.items)
-    {
-      if (!_repoCache.ContainsKey(repo.full_name))
-      {
-        _repoCache.Add(repo.full_name, repo);
-      }
-    }
-  }
-  
   public static void StartLoadReposTask(Settings settings)
   {
-    loadReposTask = Task.Run(() => GithubApi.LoadReposToCache(settings));
+    loadReposTask = Task.Run(() => LoadReposToCache(settings));
   }
 
   public static void LoadReposToCache(Settings settings)
@@ -78,7 +35,7 @@ internal static class GithubApi
     {
       LoadOrgReposToCache(organization, settings);
     }
-    reposLoaded = true;
+    GithubCache.reposLoaded = true;
   }
   
   public static void LoadUserReposToCache(string user, Settings settings)
@@ -89,7 +46,7 @@ internal static class GithubApi
     {
       var url = $"{_githubApiUrl}/users/{user}/repos?sort=created&direction=asc&per_page=100&page={page}";
       var result = _QueryGithubRepos(url, settings.githubApiToken);
-      AddToLocalCache(result);
+      GithubCache.AddToLocalCache(result);
       moreResults = result.total_count == 100;
       page++;
     }
@@ -103,7 +60,7 @@ internal static class GithubApi
     {
       var url = $"{_githubApiUrl}/orgs/{organization}/repos?sort=created&direction=asc&per_page=100&page={page}";
       var result = _QueryGithubRepos(url, settings.githubApiToken);
-      AddToLocalCache(result);
+      GithubCache.AddToLocalCache(result);
       moreResults = result.total_count == 100;
       page++;
     }
@@ -111,7 +68,7 @@ internal static class GithubApi
 
   public static ApiResult QueryGithub(string query, Settings settings)
   {
-    var localResult = QueryLocalCache(query, settings);
+    var localResult = GithubCache.Query(query, settings);
     if (!localResult.incomplete_results)
     {
       return localResult;
@@ -120,7 +77,7 @@ internal static class GithubApi
     var orgQuery = orgQueryPrefix + string.Join(orgQueryPrefix, settings.organizations);
     var url = $"{_githubApiUrl}/search/repositories?sort=updated&q={query}{orgQuery}";
     var result = _QueryGithub(url, settings.githubApiToken);
-    AddToLocalCache(result);
+    GithubCache.AddToLocalCache(result);
     return result;
   }
 

@@ -142,7 +142,7 @@ public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
       }
     }
 
-    if (GithubApi.reposLoaded == false)
+    if (GithubCache.reposLoaded == false)
     {
       return await Task.Run(() => new List<Result>(){
             new()
