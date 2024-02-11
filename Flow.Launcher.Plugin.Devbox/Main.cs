@@ -46,65 +46,10 @@ namespace Flow.Launcher.Plugin.Devbox
       {
         if (requiresRepoCache.Contains(query.ActionKeyword))
         {
-          if (String.IsNullOrEmpty(settings.githubApiToken))
+          var intermediateResultList = await HandleRepoCacheLoading(query);
+          if (intermediateResultList != null && intermediateResultList.Count > 0)
           {
-            return await Task.Run(() => new List<Result>(){
-              new Result()
-              {
-                Title = "GitHub API token not set - Press enter to open settings",
-                SubTitle = "Settings > Plugins > Devbox > GitHub API Token",
-                Action = (e) =>
-                {
-                  context.API.OpenSettingDialog();
-                  return true;
-                },
-                IcoPath = ico
-              }
-            });
-          }
-          Task loadReposTask = GithubApi.loadReposTask;
-          bool taskFinished = loadReposTask.Status == TaskStatus.RanToCompletion
-           || loadReposTask.Status == TaskStatus.Faulted
-           || loadReposTask.Status == TaskStatus.Canceled;
-          if (!taskFinished)
-          {
-            ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
-            {
-              Results = new List<Result>()
-              {
-                new Result()
-                {
-                  Title = "Loading GitHub repos...",
-                  IcoPath = ico
-                }
-              },
-              Query = query
-            });
-            try
-            {
-              await loadReposTask;
-            }
-            catch (Exception)
-            {
-              // Do nothing - handled in the next block
-            }
-          }
-
-          if (GithubApi.reposLoaded == false)
-          {
-            return await Task.Run(() => new List<Result>(){
-              new Result()
-              {
-                Title = "GitHub repos failed to load. Restart?",
-                SubTitle = $"Error: {loadReposTask.Exception.InnerException.Message}",
-                Action = (e) =>
-                {
-                  GithubApi.StartLoadReposTask(settings);
-                  return true;
-                },
-                IcoPath = ico
-              }
-            });
+            return intermediateResultList;
           }
         }
 
@@ -133,6 +78,88 @@ namespace Flow.Launcher.Plugin.Devbox
           }
         });
       }
+    }
+
+    private async Task<List<Result>> HandleRepoCacheLoading(Query query)
+    {
+      if (String.IsNullOrEmpty(settings.githubApiToken))
+      {
+        return await Task.Run(() => new List<Result>(){
+              new Result()
+              {
+                Title = "GitHub API token not set - Press enter to open settings",
+                SubTitle = "Settings > Plugins > Devbox > GitHub API Token",
+                Action = (e) =>
+                {
+                  context.API.OpenSettingDialog();
+                  return true;
+                },
+                IcoPath = ico
+              }
+            });
+      }
+      var hasUserOrOrgs = settings.githubUser != null || settings.organizations.Count > 0;
+      if (!hasUserOrOrgs)
+      {
+        return await Task.Run(() => new List<Result>(){
+              new Result()
+              {
+                Title = "GitHub user or organization not set - Press enter to open settings",
+                SubTitle = "Settings > Plugins > Devbox > GitHub User",
+                Action = (e) =>
+                {
+                  context.API.OpenSettingDialog();
+                  return true;
+                },
+                IcoPath = ico
+              }
+            });
+      }
+      Task loadReposTask = GithubApi.loadReposTask;
+      bool taskFinished = loadReposTask.Status == TaskStatus.RanToCompletion
+       || loadReposTask.Status == TaskStatus.Faulted
+       || loadReposTask.Status == TaskStatus.Canceled;
+      if (!taskFinished)
+      {
+        ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
+        {
+          Results = new List<Result>()
+              {
+                new Result()
+                {
+                  Title = "Loading GitHub repos...",
+                  IcoPath = ico
+                }
+              },
+          Query = query
+        });
+        try
+        {
+          await loadReposTask;
+        }
+        catch (Exception)
+        {
+          // Do nothing - handled in the next block
+        }
+      }
+
+      if (GithubApi.reposLoaded == false)
+      {
+        return await Task.Run(() => new List<Result>(){
+              new Result()
+              {
+                Title = "GitHub repos failed to load. Restart?",
+                SubTitle = $"Error: {loadReposTask.Exception.InnerException.Message}",
+                Action = (e) =>
+                {
+                  GithubApi.StartLoadReposTask(settings);
+                  return true;
+                },
+                IcoPath = ico
+              }
+            });
+      }
+      return new List<Result>();
     }
   }
 }

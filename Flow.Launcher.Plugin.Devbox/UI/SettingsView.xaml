@@ -207,7 +207,7 @@
           Margin="16,6,16,6"
           HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Text="GitHub Organizations"
+          Text="GitHub Organizations (Comma separated)"
           TextBlock.Foreground="{DynamicResource Color05B}"
         />
         <StackPanel
@@ -224,16 +224,6 @@
             TextWrapping="NoWrap"
           />
         </StackPanel>
-        <TextBlock
-          Grid.Row="9"
-          Grid.Column="0"
-          Margin="16,6,16,6"
-          HorizontalAlignment="Left"
-          VerticalAlignment="Center"
-          Text="(Comma separated list of organizations)"
-          TextBlock.Foreground="{DynamicResource Color05B}"
-        />
-
       </Grid>
     </StackPanel>
   </Border>
