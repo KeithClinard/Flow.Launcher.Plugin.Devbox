@@ -31,6 +31,20 @@ Open Flow by pressing `Alt + space` and run the **Restart Flow Launcher** comman
 The plugin should now be available in Flow.
 If installed correctly, typing `db` into Flow will display the current version of the plugin.
 
+### Configuration
+
+The following settings should be configured in the plugin settings before using this plugin (Settings > Plugins > Devbox):
+
+* Github API Token
+  * This Personal Access Token is used to authenticate with the GitHub API. It will need the `repo` scope.
+* WSL Distro
+  * Defaults to `Ubuntu-22.04` if not set.
+* GitHub Username
+  * Required to access your personal repositories
+* GitHub Organizations
+  * Required to access your organization's repositories
+  * This should be a comma separated list
+
 ### Updating the Plugin
 
 To update the plugin, use the `db` keyword in Flow Launcher to install the latest version.
