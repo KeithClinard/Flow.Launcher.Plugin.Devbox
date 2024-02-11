@@ -57,6 +57,7 @@ namespace Flow.Launcher.Plugin.Devbox
         {
           "c" => await Task.Run(() => VSCode.Query(query, settings, context)),
           "gh" => await Task.Run(() => Github.Query(query, settings, context)),
+          "cl" or "clone" => await Task.Run(() => CloneRepo.Query(query, settings, context)),
           "db" => await Task.Run(() => Update.Query(query, settings, context)),
           _ => await Task.Run(() => new List<Result>(){
             new Result()
