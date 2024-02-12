@@ -101,6 +101,7 @@ internal static class CloneRepo
 
     if (results.total_count > 0)
     {
+      var scoreCounter = 100;
       foreach (var result in results.items)
       {
         list.Add(new Result
@@ -108,6 +109,7 @@ internal static class CloneRepo
           Title = result.full_name,
           SubTitle = cloneMessage,
           IcoPath = _ico,
+          Score = scoreCounter,
           Action = (e) =>
           {
             clone(result, useWsl, settings);
@@ -115,6 +117,7 @@ internal static class CloneRepo
             return true;
           }
         });
+        scoreCounter--;
       }
     }
     else

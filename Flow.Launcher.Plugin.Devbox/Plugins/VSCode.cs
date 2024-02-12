@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,11 +9,6 @@ namespace Flow.Launcher.Plugin.Devbox;
 internal static class VSCode
 {
   private static readonly string _ico = "VSCode.png";
-
-  private static List<string> _subtitles = new()
-  {
-    "WSL", "Windows", "VSCode Workspace - WSL", "VSCode Workspace - Windows"
-  };
 
   private static string getDisplayName(string fileName)
   {
@@ -91,122 +85,43 @@ internal static class VSCode
       return list;
     }
 
-    var searchString = string.Join("*", query.Search.Replace(" ", "").ToCharArray());
-    var worktreeSearchString = "";
+    var searchString = query.Search;
     var isQueryingWorktrees = false;
 
     var searchStringTerms = searchString.Split('/');
     if (searchStringTerms.Length > 1)
     {
       isQueryingWorktrees = true;
-      searchString = searchStringTerms[0];
-      worktreeSearchString = string.Join("", searchStringTerms.Skip(1));
+      searchString = searchString.Replace("/", " ");
     }
 
-    var wslDirectoryResults = Array.Empty<string>();
-    var wslWorkspaceResults = Array.Empty<string>();
-    var wslWorktreeResults = new List<string>();
-    if (!string.IsNullOrEmpty(settings.wslDistroName))
+    var openableDirectories = GetOpenableDirectories(settings, isQueryingWorktrees);
+
+    var resultsList = openableDirectories
+      .Select(i => Helpers.GetResult<OpenableDirectory>(searchString, i.Name, i))
+      .Where(i => i.IsMatch)
+      .OrderByDescending(i => i.MatchScore)
+      .Select(i => i.Value)
+      .ToList();
+
+    if (resultsList.Count > 0)
     {
-      var wslGitFolder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
-      var wslGitWorktreesFolder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitWorktreesFolder}";
-      if (isQueryingWorktrees)
+      var scoreCounter = 100;
+      foreach (var result in resultsList)
       {
-        if (Directory.Exists(wslGitWorktreesFolder))
+        list.Add(new Result
         {
-          foreach (var dir in Directory.GetDirectories($"{wslGitWorktreesFolder}", $"*{searchString}*", SearchOption.TopDirectoryOnly))
+          Title = result.Name,
+          SubTitle = result.Subtitle,
+          IcoPath = _ico,
+          Score = scoreCounter,
+          Action = (e) =>
           {
-            wslWorktreeResults.AddRange(Directory.GetDirectories(dir, $"*{worktreeSearchString}*", SearchOption.TopDirectoryOnly));
+            openVSCode(result.Path, result.IsWslResult, result.IsGitWorktree, settings);
+            return true;
           }
-        }
-      }
-      else
-      {
-        wslDirectoryResults = Directory.GetDirectories(wslGitFolder, $"*{searchString}*", SearchOption.TopDirectoryOnly);
-        wslWorkspaceResults = Directory.GetFiles(wslGitFolder, $"*{searchString}*.code-workspace", SearchOption.TopDirectoryOnly);
-      }
-    }
-
-    var localDirectoryResults = Array.Empty<string>();
-    var localWorkspaceResults = Array.Empty<string>();
-    var localWorktreeResults = new List<string>();
-    if (Directory.Exists(settings.gitFolder))
-    {
-      if (isQueryingWorktrees)
-      {
-        if (Directory.Exists(settings.gitWorktreesFolder))
-        {
-          foreach (var dir in Directory.GetDirectories($"{settings.gitWorktreesFolder}", $"*{searchString}*", SearchOption.TopDirectoryOnly))
-          {
-            localWorktreeResults.AddRange(Directory.GetDirectories(dir, $"*{worktreeSearchString}*", SearchOption.TopDirectoryOnly));
-          }
-        }
-      }
-      else
-      {
-        localDirectoryResults = Directory.GetDirectories(settings.gitFolder, $"*{searchString}*", SearchOption.TopDirectoryOnly);
-        localWorkspaceResults = Directory.GetFiles(settings.gitFolder, $"*{searchString}*.code-workspace", SearchOption.TopDirectoryOnly);
-      }
-    }
-
-    var worktreeResultsList = new List<string[]>
-    {
-      wslWorktreeResults.ToArray(),
-      localWorktreeResults.ToArray()
-    };
-
-    var resultsList = new List<string[]>
-    {
-      wslDirectoryResults,
-      localDirectoryResults,
-      wslWorkspaceResults,
-      localWorkspaceResults
-    };
-
-    if (resultsList.Any(results => results.Length > 0))
-    {
-      for (var i = 0; i < resultsList.Count; i++)
-      {
-        var results = resultsList[i];
-        var subtitle = _subtitles[i];
-        var isWslResult = subtitle.ToLower().Contains("wsl");
-        foreach (var result in results)
-        {
-          list.Add(new Result
-          {
-            Title = getDisplayName(Path.GetFileName(result)),
-            SubTitle = subtitle,
-            IcoPath = _ico,
-            Action = (e) =>
-            {
-              openVSCode(result, isWslResult, settings);
-              return true;
-            }
-          });
-        }
-      }
-    }
-    else if (worktreeResultsList.Any(results => results.Length > 0))
-    {
-      for (var i = 0; i < worktreeResultsList.Count; i++)
-      {
-        var results = worktreeResultsList[i];
-        var subtitle = $"Git Worktree - {_subtitles[i]}";
-        var isWslResult = subtitle.ToLower().Contains("wsl");
-        foreach (var result in results)
-        {
-          list.Add(new Result
-          {
-            Title = getWorktreeDisplayName(result),
-            SubTitle = subtitle,
-            IcoPath = _ico,
-            Action = (e) =>
-            {
-              openVSCode(result, isWslResult, true, settings);
-              return true;
-            }
-          });
-        }
+        });
+        scoreCounter--;
       }
     }
     else
@@ -220,4 +135,127 @@ internal static class VSCode
 
     return list;
   }
+
+  private static List<OpenableDirectory> GetOpenableDirectories(Settings settings, bool isQueryingWorktrees)
+  {
+    var openableDirectories = new List<OpenableDirectory>();
+
+    if (!string.IsNullOrEmpty(settings.wslDistroName))
+    {
+      var wslGitFolder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitFolder}";
+      var wslGitWorktreesFolder = $"\\\\wsl$\\{settings.wslDistroName}{settings.wslGitWorktreesFolder}";
+      if (isQueryingWorktrees)
+      {
+        if (Directory.Exists(wslGitWorktreesFolder))
+        {
+          var wslWorktrees = Directory.GetDirectories($"{wslGitWorktreesFolder}", "*", SearchOption.TopDirectoryOnly);
+          foreach (var worktree in wslWorktrees)
+          {
+            var repoWorktrees = Directory.GetDirectories(worktree, "*", SearchOption.TopDirectoryOnly);
+            foreach (var directory in repoWorktrees)
+            {
+              openableDirectories.Add(new OpenableDirectory
+              {
+                Name = getWorktreeDisplayName(directory),
+                Path = directory,
+                Subtitle = "WSL",
+                IsWslResult = true,
+                IsGitWorktree = true
+              });
+            }
+          }
+        }
+      }
+      else
+      {
+        var wslDirectories = Directory.GetDirectories(wslGitFolder, "*", SearchOption.TopDirectoryOnly);
+        foreach (var directory in wslDirectories)
+        {
+          openableDirectories.Add(new OpenableDirectory
+          {
+            Name = getDisplayName(Path.GetFileName(directory)),
+            Path = directory,
+            Subtitle = "WSL",
+            IsWslResult = true,
+            IsGitWorktree = false
+          });
+        }
+        var wslWorkspaces = Directory.GetFiles(wslGitFolder, "*.code-workspace", SearchOption.TopDirectoryOnly);
+        foreach (var workspace in wslWorkspaces)
+        {
+          openableDirectories.Add(new OpenableDirectory
+          {
+            Name = getDisplayName(Path.GetFileName(workspace)),
+            Path = workspace,
+            Subtitle = "VSCode Workspace - WSL",
+            IsWslResult = true,
+            IsGitWorktree = false
+          });
+        }
+      }
+    }
+
+    if (Directory.Exists(settings.gitFolder))
+    {
+      if (isQueryingWorktrees)
+      {
+        if (Directory.Exists(settings.gitWorktreesFolder))
+        {
+          var windowsWorktrees = Directory.GetDirectories($"{settings.gitWorktreesFolder}", "*", SearchOption.TopDirectoryOnly);
+          foreach (var worktree in windowsWorktrees)
+          {
+            var repoWorktrees = Directory.GetDirectories(worktree, "*", SearchOption.TopDirectoryOnly);
+            foreach (var directory in repoWorktrees)
+            {
+              openableDirectories.Add(new OpenableDirectory
+              {
+                Name = getWorktreeDisplayName(directory),
+                Path = directory,
+                Subtitle = "Windows",
+                IsWslResult = false,
+                IsGitWorktree = true
+              });
+            }
+          }
+        }
+      }
+      else
+      {
+        var localDirectories = Directory.GetDirectories(settings.gitFolder, "*", SearchOption.TopDirectoryOnly);
+        foreach (var directory in localDirectories)
+        {
+          openableDirectories.Add(new OpenableDirectory
+          {
+            Name = getDisplayName(Path.GetFileName(directory)),
+            Path = directory,
+            Subtitle = "Windows",
+            IsWslResult = false,
+            IsGitWorktree = false
+          });
+        }
+        var localWorkspaces = Directory.GetFiles(settings.gitFolder, "*.code-workspace", SearchOption.TopDirectoryOnly);
+        foreach (var workspace in localWorkspaces)
+        {
+          openableDirectories.Add(new OpenableDirectory
+          {
+            Name = getDisplayName(Path.GetFileName(workspace)),
+            Path = workspace,
+            Subtitle = "VSCode Workspace - Windows",
+            IsWslResult = false,
+            IsGitWorktree = false
+          });
+        }
+      }
+    }
+    return openableDirectories;
+  }
+}
+
+internal class OpenableDirectory
+{
+  public string Name { get; set; }
+  public string Path { get; set; }
+  public string Subtitle { get; set; }
+  public bool IsWslResult { get; set; }
+  public bool IsGitWorktree { get; set; }
 }
