@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-
 
 namespace Flow.Launcher.Plugin.Devbox.Core;
 
 internal static class GithubCache
 {
-  private static Dictionary<string, ApiResultRepo> _repoCache = new();
+  private static readonly Dictionary<string, ApiResultRepo> _repoCache = new();
   public static bool reposLoaded = false;
   public static ApiResult Query(string query, Settings settings)
   {
@@ -40,7 +38,5 @@ internal static class GithubCache
       }
     }
   }
-
-  
 }
 

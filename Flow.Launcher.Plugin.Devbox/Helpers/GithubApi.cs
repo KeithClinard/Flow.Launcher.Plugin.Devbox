@@ -7,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-
 namespace Flow.Launcher.Plugin.Devbox.Core;
 
 internal static class GithubApi
@@ -143,5 +142,4 @@ internal static class GithubApi
     var response = _httpClient.Send(request);
     return response.Content.ReadAsStream();
   }
-
 }

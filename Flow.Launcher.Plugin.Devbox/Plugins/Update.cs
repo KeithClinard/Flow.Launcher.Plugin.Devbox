@@ -62,11 +62,13 @@ internal static class Update
       return list;
     }
 
+    var scoreCounter = 100;
     foreach (var asset in assets)
     {
       var result = new Result
       {
-        IcoPath = _ico
+        IcoPath = _ico,
+        Score = scoreCounter,
       };
       if (asset.IsLatestRelease)
       {
@@ -93,6 +95,7 @@ internal static class Update
 
       }
       list.Add(result);
+      scoreCounter--;
     }
 
     return list;

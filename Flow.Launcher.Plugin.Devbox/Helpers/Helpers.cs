@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Flow.Launcher.Plugin.Devbox.Core;
@@ -29,11 +28,11 @@ internal static class Helpers
     var searchRegex = new Regex(".*" + regexQueryString + ".*", RegexOptions.IgnoreCase);
     var isMatch = searchRegex.IsMatch(key);
 
-    var matchScore = isMatch ? 1 : 0;
-    var queryWords = query.Split(" ");
+    var matchScore = 1;
+    var queryWords = query.ToLower().Split(" ");
     foreach (var word in queryWords)
     {
-      if (key.Contains(word))
+      if (key.ToLower().Contains(word))
       {
         matchScore++;
       }

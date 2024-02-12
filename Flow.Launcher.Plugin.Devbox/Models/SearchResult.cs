@@ -1,5 +1,6 @@
 namespace Flow.Launcher.Plugin.Devbox.Core;
-class SearchResult<T>
+
+internal class SearchResult<T>
 {
   public T Value { get; set; }
   public int MatchScore { get; set; }

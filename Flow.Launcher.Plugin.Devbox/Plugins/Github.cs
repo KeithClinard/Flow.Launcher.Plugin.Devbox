@@ -36,6 +36,7 @@ internal static class Github
 
     if (results.total_count > 0)
     {
+      var scoreCounter = 100;
       foreach (var result in results.items)
       {
         list.Add(new Result
@@ -43,12 +44,14 @@ internal static class Github
           Title = result.full_name,
           SubTitle = result.description,
           IcoPath = _ico,
+          Score = scoreCounter,
           Action = (e) =>
           {
             Helpers.OpenUrl(result.html_url);
             return true;
           }
         });
+        scoreCounter--;
       }
     }
     else
