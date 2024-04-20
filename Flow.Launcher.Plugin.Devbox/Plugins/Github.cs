@@ -25,8 +25,14 @@ internal static class Github
         SubTitle = "...or keep typing to search for repositories",
         Action = (e) =>
         {
-          var orgsQueryString = string.Join("+", settings.organizations.Select(org => "+org%3A" + org));
-          Helpers.OpenUrl("https://github.com/pulls?q=is%3Aopen+is%3Apr+NOT+wip+draft%3Afalse+" + orgsQueryString);
+          var isPR = "is%3Apr+";
+          var openPRs = "is%3Aopen+";
+          var notWIP = "NOT+wip+";
+          var notDraft = "draft%3Afalse+";
+          var notDependabot = "-author%3Aapp%2Fdependabot+";
+          var selectedOrgsOnly = string.Join("+", settings.organizations.Select(org => "+org%3A" + org));
+
+          Helpers.OpenUrl("https://github.com/pulls?q=" + isPR + openPRs + notWIP + notDraft + notDependabot + selectedOrgsOnly);
           return true;
         },
         IcoPath = _ico
