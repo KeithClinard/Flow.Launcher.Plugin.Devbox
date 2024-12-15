@@ -49,7 +49,7 @@ internal static class VSCode
         var worktreeFolderName = splitPath[splitPath.Length - 2];
         networkPathToParentFolder = $"{wslNetworkPath}{backslashedWslGitWorktreesFolder}\\{worktreeFolderName}";
       }
-      command = $"wsl --cd {networkPathToParentFolder} code {fileName}";
+      command = $"wsl --cd {networkPathToParentFolder} --distribution {settings.wslDistroName} code {fileName}";
     }
 
     ProcessStartInfo info;

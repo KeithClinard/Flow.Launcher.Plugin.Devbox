@@ -30,7 +30,7 @@ internal static class CloneRepo
     var command = $"git clone {cloneUrl}";
     if (useWsl)
     {
-      command = $"wsl --cd {settings.wslGitFolder} {command}";
+      command = $"wsl --cd {settings.wslGitFolder} --distribution {settings.wslDistroName} {command}";
     }
     ProcessStartInfo info;
     var arguments = $"/c \"{command}\"";
