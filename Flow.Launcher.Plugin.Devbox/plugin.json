@@ -1,6 +1,6 @@
 {
-  "ID": "1FAA35C8BA93444A87068DC94F986DB0",
-  "ActionKeywords": ["db", "gh", "c", "cl", "clone"],
+  "ID": "1FAA35C8BA93444A87068DC94F986DB1",
+  "ActionKeywords": ["db", "gh", "c", "cl", "cr", "clone"],
   "Name": "Devbox",
   "Description": "Devbox Plugin",
   "Author": "Keith Clinard",

@@ -7,8 +7,10 @@ Open Flow Launcher and use one of the following keywords:
 - `db`: Install a new version of this plugin
 - `gh`: Open a repo in GitHub
 - `c`: Open a repo in VSCode
+- `cr`: Open a recent VS Code Remote-SSH folder
 - `cl`: Clone a repo from GitHub to WSL
 - `cl win`: Clone a repo from GitHub to Windows
+
 
 ## Installation
 
