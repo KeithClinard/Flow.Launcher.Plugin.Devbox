@@ -29,6 +29,7 @@ public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
     this._context = context;
     _settings = context.API.LoadSettingJsonStorage<Settings>();
     GithubApi.StartLoadReposTask(_settings);
+    CodeRemoteCache.StartLoadTask();
     await Task.CompletedTask;
   }
 
@@ -51,9 +52,28 @@ public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
         }
       }
 
+      if (query.ActionKeyword == "cr")
+      {
+        var intermediateResultList = await HandleCodeRemoteCacheLoading(query, false);
+        if (intermediateResultList != null && intermediateResultList.Count > 0)
+        {
+          return intermediateResultList;
+        }
+
+        if (!CodeRemoteCache.HasMatch(query.Search))
+        {
+          intermediateResultList = await HandleCodeRemoteCacheLoading(query, true);
+          if (intermediateResultList != null && intermediateResultList.Count > 0)
+          {
+            return intermediateResultList;
+          }
+        }
+      }
+
       return query.ActionKeyword switch
       {
         "c" => await Task.Run(() => VSCode.Query(query, _settings, _context)),
+        "cr" => await Task.Run(() => CodeRemote.Query(query)),
         "gh" => await Task.Run(() => Github.Query(query, _settings, _context)),
         "cl" or "clone" => await Task.Run(() => CloneRepo.Query(query, _settings, _context)),
         "db" => await Task.Run(() => Update.Query(query, _settings, _context)),
@@ -77,6 +97,43 @@ public class Main : IAsyncPlugin, ISettingProvider, IResultUpdated
         }
       });
     }
+  }
+
+  private async Task<List<Result>> HandleCodeRemoteCacheLoading(Query query, bool refresh)
+  {
+    var loadRemoteConnectionsTask = refresh
+      ? CodeRemoteCache.RefreshTask()
+      : CodeRemoteCache.EnsureLoadedTask();
+    var taskFinished = loadRemoteConnectionsTask.Status == TaskStatus.RanToCompletion
+      || loadRemoteConnectionsTask.Status == TaskStatus.Faulted
+      || loadRemoteConnectionsTask.Status == TaskStatus.Canceled;
+
+    if (!taskFinished)
+    {
+      ResultsUpdated?.Invoke(this, new ResultUpdatedEventArgs
+      {
+        Results = new List<Result>
+        {
+          new()
+          {
+            Title = "Loading VS Code remote folders...",
+            IcoPath = _ico
+          }
+        },
+        Query = query
+      });
+
+      try
+      {
+        await loadRemoteConnectionsTask;
+      }
+      catch (Exception)
+      {
+        // Do nothing - handled in the next block
+      }
+    }
+
+    return new List<Result>();
   }
 
   private async Task<List<Result>> HandleRepoCacheLoading(Query query)
