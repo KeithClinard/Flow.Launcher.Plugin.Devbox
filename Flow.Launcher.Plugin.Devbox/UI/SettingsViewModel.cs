@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Flow.Launcher.Plugin.Devbox.Core;
 
 namespace Flow.Launcher.Plugin.Devbox.UI;
@@ -47,10 +48,13 @@ public class SettingsViewModel : BaseModel
     }
     set
     {
-      var newValue = value.Replace(" ", "");
-      var stringOrgs = string.Join(",", Settings.organizations);
-      if(stringOrgs != newValue) {
-        Settings.organizations = new List<string>(value.Split(","));
+      var newOrganizations = (value ?? string.Empty)
+        .Split(',')
+        .Select(organization => organization.Trim())
+        .Where(organization => organization.Length > 0)
+        .ToList();
+      if (!Settings.organizations.SequenceEqual(newOrganizations)) {
+        Settings.organizations = newOrganizations;
         GithubApi.StartLoadReposTask(Settings);
       }
       OnPropertyChanged();
