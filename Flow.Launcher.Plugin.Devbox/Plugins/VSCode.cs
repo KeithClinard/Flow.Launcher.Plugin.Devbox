@@ -37,8 +37,9 @@ internal static class VSCode
   {
     if (useWsl)
     {
-      var fileName = Path.GetFileName(pathToFile);
-      var workingDirectory = settings.wslGitFolder;
+      var openWslHome = pathToFile == "~";
+      var fileName = openWslHome ? "" : Path.GetFileName(pathToFile);
+      var workingDirectory = openWslHome ? "~" : settings.wslGitFolder;
       if (isGitWorktree)
       {
         var splitPath = pathToFile.Split(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -61,7 +62,9 @@ internal static class VSCode
       info.ArgumentList.Add("zsh");
       info.ArgumentList.Add("-l");
       info.ArgumentList.Add("-c");
-      info.ArgumentList.Add(string.IsNullOrEmpty(fileName) ? "exec code" : "exec code -- \"$@\"");
+      info.ArgumentList.Add(openWslHome
+        ? "exec code ."
+        : string.IsNullOrEmpty(fileName) ? "exec code" : "exec code -- \"$@\"");
       if (!string.IsNullOrEmpty(fileName))
       {
         info.ArgumentList.Add("devbox");
@@ -106,6 +109,22 @@ internal static class VSCode
     }
 
     var searchString = query.Search;
+    if (searchString == "~")
+    {
+      list.Add(new Result
+      {
+        Title = "Open WSL Home in VSCode",
+        SubTitle = "Open your WSL home directory",
+        IcoPath = _ico,
+        Action = (e) =>
+        {
+          openVSCode("~", true, settings);
+          return true;
+        }
+      });
+      return list;
+    }
+
     var isQueryingWorktrees = false;
 
     var searchStringTerms = searchString.Split('/');
