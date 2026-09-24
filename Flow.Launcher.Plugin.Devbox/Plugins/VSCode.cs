@@ -35,26 +35,46 @@ internal static class VSCode
 
   private static void openVSCode(string pathToFile, bool useWsl, bool isGitWorktree, Settings settings)
   {
-    var command = $"code {pathToFile}";
     if (useWsl)
     {
-      var wslNetworkPath = $"\\\\wsl$\\{settings.wslDistroName}";
-      var backslashedWslGitFolder = settings.wslGitFolder.Replace("/", "\\");
       var fileName = Path.GetFileName(pathToFile);
-      var networkPathToParentFolder = $"{wslNetworkPath}{backslashedWslGitFolder}";
+      var workingDirectory = settings.wslGitFolder;
       if (isGitWorktree)
       {
-        var backslashedWslGitWorktreesFolder = settings.wslGitWorktreesFolder.Replace("/", "\\");
         var splitPath = pathToFile.Split(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         var worktreeFolderName = splitPath[splitPath.Length - 2];
-        networkPathToParentFolder = $"{wslNetworkPath}{backslashedWslGitWorktreesFolder}\\{worktreeFolderName}";
+        workingDirectory = $"{settings.wslGitWorktreesFolder.TrimEnd('/', '\\')}/{worktreeFolderName}";
       }
-      command = $"wsl --cd {networkPathToParentFolder} --distribution {settings.wslDistroName} --exec zsh -lc 'code {fileName}'";
+
+      var info = new ProcessStartInfo
+      {
+        FileName = "wsl.exe",
+        UseShellExecute = false,
+        CreateNoWindow = true,
+        WindowStyle = ProcessWindowStyle.Hidden
+      };
+      info.ArgumentList.Add("--cd");
+      info.ArgumentList.Add(workingDirectory);
+      info.ArgumentList.Add("--distribution");
+      info.ArgumentList.Add(settings.wslDistroName);
+      info.ArgumentList.Add("--exec");
+      info.ArgumentList.Add("zsh");
+      info.ArgumentList.Add("-l");
+      info.ArgumentList.Add("-c");
+      info.ArgumentList.Add(string.IsNullOrEmpty(fileName) ? "exec code" : "exec code -- \"$@\"");
+      if (!string.IsNullOrEmpty(fileName))
+      {
+        info.ArgumentList.Add("devbox");
+        info.ArgumentList.Add(fileName);
+      }
+
+      _ = Process.Start(info);
+      return;
     }
 
-    ProcessStartInfo info;
+    var command = $"code {pathToFile}";
     var arguments = $"/c \"{command}\"";
-    info = new ProcessStartInfo
+    var windowsInfo = new ProcessStartInfo
     {
       FileName = "cmd.exe",
       Arguments = arguments,
@@ -62,7 +82,7 @@ internal static class VSCode
       WindowStyle = ProcessWindowStyle.Hidden
     };
 
-    _ = Process.Start(info);
+    _ = Process.Start(windowsInfo);
   }
 
   public static List<Result> Query(Query query, Settings settings, PluginInitContext context)
